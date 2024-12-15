@@ -4,23 +4,24 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
-import { UserEntity } from './user/entities/user.entity';
+import * as Joi from 'joi';
+import { TypeOrmConfigService } from './TypeOrmConfigService';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validationSchema: Joi.object({
+        POSTGRES_HOST: Joi.string().required(),
+        POSTGRES_PORT: Joi.number().default(5432),
+        POSTGRES_USER: Joi.string().required(),
+        POSTGRES_PASSWORD: Joi.string().required(),
+        POSTGRES_DATABASE: Joi.string().required(),
+        PORT: Joi.number().default(3000),
+      }),
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.POSTGRES_HOST,
-      port: parseInt(process.env.POSTGRES_PORT),
-      password: process.env.POSTGRES_PASSWORD,
-      username: process.env.POSTGRES_USER,
-      entities: [UserEntity],
-      database: process.env.POSTGRES_DATABASE,
-      synchronize: true,
-      logging: true,
+    TypeOrmModule.forRootAsync({
+      useClass: TypeOrmConfigService,
     }),
     UserModule,
   ],
