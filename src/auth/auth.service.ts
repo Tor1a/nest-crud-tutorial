@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthRepository } from './auth.repository';
 import { SignUpRequestBodyDto } from './dto/sign-up-request-body.dto';
@@ -30,5 +30,36 @@ export class AuthService {
     );
 
     return this.authRepository.signUp(signUpRequestBodyDto);
+  }
+
+  // async signIn(signInRequestBodyDto: SignInRequestBodyDto): Promise<any> {
+  async validateUser(nickname: string, password: string): Promise<any> {
+    const authUser = await this.userService.findOne(nickname);
+    if (!authUser) {
+      throw new UnauthorizedException();
+    }
+    // const validatePassword = await bcrypt.compare(password, authUser.password);
+    // if (!validatePassword) {
+    //   throw new UnauthorizedException();
+    // }
+    const result = await bcrypt.compare(password, authUser.password);
+    console.log('reuslt: ', result);
+
+    if (result) {
+      const { password, ...userWithoutPassword } = authUser;
+      return userWithoutPassword;
+    }
+    return null;
+  }
+
+  async signIn(authUser: any) {
+    const payload = { username: authUser.username, sub: authUser.username };
+    console.log('console.log()', payload);
+    console.log(process.env.JWT_KEY);
+    return {
+      access_token: this.jwtService.sign(payload, {
+        secret: `${process.env.JWT_SECRET}`,
+      }),
+    };
   }
 }

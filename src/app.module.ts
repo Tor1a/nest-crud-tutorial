@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_DATABASE: Joi.string().required(),
         PORT: Joi.number().default(3000),
+        JWT_SECRET: Joi.string().required(),
       }),
     }),
     TypeOrmModule.forRootAsync({
