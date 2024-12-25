@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -10,7 +11,8 @@ import {
 import { AuthService } from './auth.service';
 import { SignUpRequestBodyDto } from './dto/sign-up-request-body.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { LocalAuthGuard } from './guard/LocalAuthGuard';
+import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import RequestWithUserInterface from './interface/request-with-user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -31,21 +33,6 @@ export class AuthController {
     }
   }
 
-  // @HttpCode(HttpStatus.OK)
-  // @Post('/sign-in')
-  // async signIn(@Body() userDTO: SignInRequestBodyDto) {
-  //   try {
-  //     await this.authService.signIn(userDTO);
-  //     return {
-  //       success: true,
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       message: error.message,
-  //     };
-  //   }
-  // }
   /**
    * sign-in을 위한 api 입니다.
    *
@@ -56,14 +43,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('local'))
   @Post('/sign-in')
-  async signIn(@Req() req): Promise<any> {
-    // return req.authUser;
-    return this.authService.signIn(req.user);
+  async signIn(@Req() req: RequestWithUserInterface) {
+    return this.authService.generateAccessToken(req.user);
   }
 
-  @UseGuards(LocalAuthGuard)
-  @Post('auth/logout')
-  async logout(@Req() req) {
-    return req.logout();
+  @UseGuards(JwtAuthGuard)
+  @Get('/me')
+  getAuthenticatedUser(@Req() req: RequestWithUserInterface) {
+    return req.user;
   }
 }

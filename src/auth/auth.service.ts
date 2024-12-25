@@ -1,9 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthRepository } from './auth.repository';
 import { SignUpRequestBodyDto } from './dto/sign-up-request-body.dto';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '../user/entity/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -32,34 +38,62 @@ export class AuthService {
     return this.authRepository.signUp(signUpRequestBodyDto);
   }
 
-  // async signIn(signInRequestBodyDto: SignInRequestBodyDto): Promise<any> {
-  async validateUser(nickname: string, password: string): Promise<any> {
+  async validateUser(nickname: string, password: string): Promise<User> {
     const authUser = await this.userService.findOne(nickname);
     if (!authUser) {
       throw new UnauthorizedException();
     }
-    // const validatePassword = await bcrypt.compare(password, authUser.password);
-    // if (!validatePassword) {
-    //   throw new UnauthorizedException();
-    // }
-    const result = await bcrypt.compare(password, authUser.password);
-    console.log('reuslt: ', result);
+    await this.verifyPassword(password, authUser.password);
 
-    if (result) {
-      const { password, ...userWithoutPassword } = authUser;
-      return userWithoutPassword;
-    }
-    return null;
+    return authUser;
   }
 
-  async signIn(authUser: any) {
-    const payload = { username: authUser.username, sub: authUser.username };
-    console.log('console.log()', payload);
-    console.log(process.env.JWT_KEY);
+  async onModuleInit() {
+    const authUser = await this.userService.findOne('kmj');
+
+    const { access_token: accessToken } =
+      await this.generateAccessToken(authUser);
+
+    console.log('accessToken', accessToken);
+
+    const payload = this.jwtService.verify(accessToken, {
+      secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+    });
+
+    console.log('payload', payload);
+
+    const user = await this.userService.findOne(payload['username']);
+    console.log('user', user);
+  }
+
+  async generateAccessToken(authUser: any) {
+    const payload = { nickname: authUser.nickname, sub: authUser.nickname };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: `${process.env.JWT_ACCESS_TOKEN_SECRET}`,
+      expiresIn: '1h',
+    });
+
     return {
-      access_token: this.jwtService.sign(payload, {
-        secret: `${process.env.JWT_SECRET}`,
-      }),
+      access_token: accessToken,
     };
+  }
+
+  async generateRefreshToken() {}
+
+  private async verifyPassword(
+    plainTextPassword: string,
+    hashedPassword: string,
+  ) {
+    const isPasswordMatching = await bcrypt.compare(
+      plainTextPassword,
+      hashedPassword,
+    );
+    if (!isPasswordMatching) {
+      throw new HttpException(
+        'Wrong credentials provided',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }
