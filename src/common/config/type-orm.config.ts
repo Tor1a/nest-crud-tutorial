@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
-import { UserEntity } from './auth/entities/user.entity';
+import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -14,7 +14,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       database: process.env.POSTGRES_DATABASE,
       entities: [UserEntity],
       synchronize: true,
-      logging: true,
+      logging: false,
     };
   }
 }
