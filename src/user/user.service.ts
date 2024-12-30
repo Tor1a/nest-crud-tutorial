@@ -11,6 +11,24 @@ export class UserService {
   //   console.log('test');
   // }
 
+  // async setCurrentRefreshToken(refreshToken: string, id: number) {
+  //   const currentHashedRefreshToken = await hash(refreshToken, 10);
+  //   await this.userRepository.update(id, { currentHashedRefreshToken });
+  // }
+  //
+  // async getUserIfRefreshTokenMatches(refreshToken: string, id: number) {
+  //   const user = await this.userRepository.findById(id);
+  //
+  //   const isRefreshTokenMatching = await compare(
+  //     refreshToken,
+  //     user.currentHashedRefreshToken,
+  //   );
+  //
+  //   if (isRefreshTokenMatching) {
+  //     return user;
+  //   }
+  // }
+
   async create(createUserDto: CreateUserDto) {
     return this.userRepository.createUser(createUserDto);
   }
@@ -23,15 +41,15 @@ export class UserService {
     return this.userRepository.findOneBy({ nickname: nickname });
   }
 
-  async update(nickname: string, updateUserDto: UpdateUserDto) {
-    return this.userRepository.updateUser(nickname, updateUserDto);
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    return this.userRepository.updateUser(id, updateUserDto);
   }
 
-  async patch(nickname: string, patchUserDto: Partial<UpdateUserDto>) {
-    return this.userRepository.patchUser(nickname, patchUserDto);
+  async patch(id: number, patchUserDto: Partial<UpdateUserDto>) {
+    return this.userRepository.patchUser(id, patchUserDto);
   }
 
-  async remove(nickname: string) {
-    return this.userRepository.deleteUser(nickname);
+  async remove(id: number) {
+    return this.userRepository.deleteUser(id);
   }
 }

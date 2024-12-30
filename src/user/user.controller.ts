@@ -1,34 +1,30 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-@Controller('users') //route group
+@Controller('users')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(
-    @Body() createUserDto: CreateUserDto,
-  ) {
+  async create(@Body() createUserDto: CreateUserDto) {
     try {
-      await this.userService.create(
-        createUserDto,
-      );
+      await this.userService.create(createUserDto);
 
       return {
         success: true,
-        message: 'User Created Successfully',
       };
     } catch (error) {
       return {
@@ -41,12 +37,10 @@ export class UserController {
   @Get()
   async findAll() {
     try {
-      const data =
-        await this.userService.findAll();
+      const data = await this.userService.findAll();
       return {
         success: true,
         data,
-        message: 'User Fetched Successfully',
       };
     } catch (error) {
       return {
@@ -56,16 +50,28 @@ export class UserController {
     }
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(':nickname')
+  async findOne(@Param('nickname') nickname: string) {
     try {
-      const data = await this.userService.findOne(
-        +id,
-      );
+      const data = await this.userService.findOne(nickname);
       return {
         success: true,
         data,
-        message: 'User Fetched Successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
+    try {
+      await this.userService.update(id, updateUserDto);
+      return {
+        success: true,
       };
     } catch (error) {
       return {
@@ -76,18 +82,11 @@ export class UserController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  async patch(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
     try {
-      await this.userService.update(
-        +id,
-        updateUserDto,
-      );
+      await this.userService.patch(id, updateUserDto);
       return {
         success: true,
-        message: 'User Updated Successfully',
       };
     } catch (error) {
       return {
@@ -98,12 +97,12 @@ export class UserController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: number) {
     try {
-      await this.userService.remove(+id);
+      await this.userService.remove(id);
       return {
         success: true,
-        message: 'User Deleted Successfully',
       };
     } catch (error) {
       return {
