@@ -1,8 +1,9 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { Strategy } from 'passport-local';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '../../user/entity/user.entity';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -22,16 +23,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
    * @param {string} nickname - 유저의 이름
    * @param {string} password - 유저의 비밀번호
    */
-  async validate(nickname: string, password: string): Promise<any> {
-    const authUser = await this.authService.validateUser(nickname, password);
-    if (!authUser) {
-      throw new UnauthorizedException();
-    }
-    const payload = { nickname: authUser.nickname, sub: authUser.nickname };
-    return {
-      access_token: this.jwtService.sign(payload, {
-        secret: process.env.JWT_SECRET,
-      }),
-    };
+  async validate(nickname: string, password: string): Promise<User> {
+    return this.authService.validateUser(nickname, password);
   }
 }
