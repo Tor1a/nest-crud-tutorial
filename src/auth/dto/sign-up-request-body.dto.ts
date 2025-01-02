@@ -12,5 +12,8 @@ export class SignUpRequestBodyDto {
   nickname: string;
 
   @IsString()
+  email: string;
+
+  @IsString()
   password: string;
 }
