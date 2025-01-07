@@ -6,17 +6,26 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignUpRequestBodyDto } from './dto/sign-up-request-body.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import RequestWithUserInterface from './interface/request-with-user.interface';
+import { ConfigService } from '@nestjs/config';
+import { UserService } from '../user/user.service';
+import { JwtRefreshAuthGuard } from './guard/jwt-refresh-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post('/sign-up')
   async singUp(@Body() userDTO: SignUpRequestBodyDto) {
@@ -43,13 +52,37 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('local'))
   @Post('/sign-in')
-  async signIn(@Req() req: RequestWithUserInterface) {
-    return this.authService.generateAccessToken(req.user);
+  async signIn(
+    @Req() req: RequestWithUserInterface,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const accessToken = await this.authService.generateAccessToken(req.user);
+    const refreshToken = await this.authService.generateRefreshToken(req.user);
+
+    const refreshTokenExpirationTime: number = this.configService.get(
+      'JWT_REFRESH_TOKEN_EXPIRATION_TIME',
+    );
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      maxAge: refreshTokenExpirationTime,
+      path: '/',
+    });
+
+    return accessToken;
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/me')
   getAuthenticatedUser(@Req() req: RequestWithUserInterface) {
     return req.user;
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtRefreshAuthGuard)
+  @Post('/refresh')
+  async refresh(@Req() req: RequestWithUserInterface) {
+    const accessToken = await this.authService.generateAccessToken(req.user);
+    return accessToken;
   }
 }

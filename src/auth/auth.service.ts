@@ -10,6 +10,8 @@ import { SignUpRequestBodyDto } from './dto/sign-up-request-body.dto';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/entity/user.entity';
+import { RedisService } from '../redis/redis.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +19,8 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
   ) {}
 
   async transformPassword(user: SignUpRequestBodyDto): Promise<void> {
@@ -48,26 +52,26 @@ export class AuthService {
     return authUser;
   }
 
-  async onModuleInit() {
-    const authUser = await this.userService.findOne('kmj');
-
-    const { access_token: accessToken } =
-      await this.generateAccessToken(authUser);
-
-    console.log('accessToken', accessToken);
-
-    const payload = this.jwtService.verify(accessToken, {
-      secret: process.env.JWT_ACCESS_TOKEN_SECRET,
-    });
-
-    console.log('payload', payload);
-
-    const user = await this.userService.findOne(payload['username']);
-    console.log('user', user);
-  }
+  // async onModuleInit() {
+  //   const authUser = await this.userService.findOne('kmj');
+  //
+  //   const { access_token: accessToken } =
+  //     await this.generateAccessToken(authUser);
+  //
+  //   console.log('accessToken', accessToken);
+  //
+  //   const payload = this.jwtService.verify(accessToken, {
+  //     secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+  //   });
+  //
+  //   console.log('payload', payload);
+  //
+  //   const user = await this.userService.findOne(payload['username']);
+  //   console.log('user', user);
+  // }
 
   async generateAccessToken(authUser: any) {
-    const payload = { nickname: authUser.nickname, sub: authUser.nickname };
+    const payload = { nickname: authUser.nickname, sub: authUser.email };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: `${process.env.JWT_ACCESS_TOKEN_SECRET}`,
@@ -79,7 +83,19 @@ export class AuthService {
     };
   }
 
-  async generateRefreshToken() {}
+  async generateRefreshToken(authUser) {
+    const payload = {
+      userId: authUser.id,
+      nickname: authUser.nickname,
+      sub: authUser.email,
+    };
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: `${process.env.JWT_REFRESH_TOKEN_SECRET}`,
+      expiresIn: '7d',
+    });
+    return refreshToken;
+  }
 
   private async verifyPassword(
     plainTextPassword: string,
